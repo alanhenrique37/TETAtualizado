@@ -24,7 +24,7 @@ db.connect((err) => {
   console.log('Conectado ao MySQL!');
 });
 
-// Rota POST para cadastro de usuários
+// Cadastrar novo usuário
 app.post('/logins', (req, res) => {
   const { nome, email, senha, telefone, foto_perfil, tipo } = req.body;
 
@@ -36,7 +36,7 @@ app.post('/logins', (req, res) => {
   const fotoBuffer = foto_perfil ? Buffer.from(foto_perfil, 'base64') : null;
   const tipoUsuario = tipo || 'usuario';
 
-  db.query(query, [nome, email, senha, telefone, fotoBuffer, tipoUsuario], (error, results) => {
+  db.query(query, [nome, email, senha, telefone, fotoBuffer, tipoUsuario], (error) => {
     if (error) {
       console.error('Erro ao inserir no MySQL:', error);
       return res.status(500).json({ message: 'Erro ao cadastrar cliente.' });
@@ -45,7 +45,7 @@ app.post('/logins', (req, res) => {
   });
 });
 
-// Rota POST para login
+// Login
 app.post('/login', (req, res) => {
   const { email, senha } = req.body;
 
@@ -70,7 +70,7 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Rota PUT para atualizar informações do usuário
+// Atualizar informações do usuário
 app.put('/logins/:emailAntigo', (req, res) => {
   const { emailAntigo } = req.params;
   const { nome, email, senha, telefone } = req.body;
@@ -99,16 +99,9 @@ app.put('/logins/:emailAntigo', (req, res) => {
   });
 });
 
-// Rota POST para cadastrar projeto (com email_autor e integridade com tabela logins)
+// Cadastrar novo projeto
 app.post('/cadastrar-projeto', (req, res) => {
-  const {
-    nome,
-    descricao,
-    valor,
-    telefone,
-    numeroPessoas,
-    email_autor, // novo campo
-  } = req.body;
+  const { nome, descricao, valor, telefone, numeroPessoas, email_autor } = req.body;
 
   if (!nome || !descricao || !valor || !telefone || !email_autor) {
     return res.status(400).json({ message: 'Campos obrigatórios estão faltando.' });
@@ -119,28 +112,65 @@ app.post('/cadastrar-projeto', (req, res) => {
 
   const query = `
     INSERT INTO projetos (
-      nome_projeto,
-      descricao,
-      valor,
-      data_criacao,
-      telefone,
-      qtd_pessoas,
-      email_autor
+      nome_projeto, descricao, valor, data_criacao, telefone, qtd_pessoas, email_autor
     ) VALUES (?, ?, ?, NOW(), ?, ?, ?)
   `;
 
-  db.query(
-    query,
-    [nome, descricao, valorNumerico, telefone, qtdPessoas, email_autor],
-    (err, result) => {
-      if (err) {
-        console.error('Erro ao inserir projeto:', err);
-        return res.status(500).json({ message: 'Erro ao cadastrar projeto.' });
-      }
-
-      res.status(201).json({ message: 'Projeto cadastrado com sucesso!' });
+  db.query(query, [nome, descricao, valorNumerico, telefone, qtdPessoas, email_autor], (err) => {
+    if (err) {
+      console.error('Erro ao inserir projeto:', err);
+      return res.status(500).json({ message: 'Erro ao cadastrar projeto.' });
     }
-  );
+
+    res.status(201).json({ message: 'Projeto cadastrado com sucesso!' });
+  });
+});
+
+// Listar todos os projetos com nome e imagem do autor
+app.get('/projetos', (req, res) => {
+  const query = `
+    SELECT
+      p.id,
+      p.nome_projeto,
+      p.descricao,
+      p.valor,
+      p.qtd_pessoas,
+      p.telefone,
+      p.email_autor,
+      l.nome AS nome_autor,
+      TO_BASE64(l.foto_perfil) AS foto_perfil
+    FROM projetos p
+    INNER JOIN logins l ON p.email_autor = l.email
+    ORDER BY p.data_criacao DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar projetos:', err);
+      return res.status(500).json({ message: 'Erro ao buscar projetos.' });
+    }
+
+    res.json(results);
+  });
+});
+
+// Rota de contato (opcional)
+app.get('/contato/:email', (req, res) => {
+  const email = req.params.email;
+  const query = 'SELECT nome, email, telefone FROM logins WHERE email = ?';
+
+  db.query(query, [email], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar contato:', err);
+      return res.status(500).json({ message: 'Erro no servidor.' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Usuário não encontrado.' });
+    }
+
+    res.json(results[0]);
+  });
 });
 
 app.listen(port, () => {

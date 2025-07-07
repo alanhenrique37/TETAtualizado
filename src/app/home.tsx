@@ -7,11 +7,10 @@ import {
   TextInput,
   Modal,
   ScrollView,
-  Alert,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 
@@ -45,6 +44,7 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState('');
   const navigation = useNavigation();
   const rota = useRouter();
+  const pathname = usePathname();
 
   const [fontsLoaded] = useFonts({
     'Poppins-Regular': require('../../assets/fonts/Poppins-Regular.ttf'),
@@ -111,93 +111,56 @@ export default function Home() {
     setFilterModalVisible(false);
   };
 
-  return !fontsLoaded ? null : (
+  if (!fontsLoaded) return null;
+
+  return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.topBar}>
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#203562" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Pesquisar"
-              placeholderTextColor="#999"
-              value={searchText}
-              onChangeText={setSearchText}
-              autoCorrect={false}
-            />
-          </View>
-
-          <TouchableOpacity
-            onPress={() => setFilterModalVisible(true)}
-            style={styles.filterButton}
-          >
-            <Ionicons name="filter-outline" size={24} color="#203562" style={styles.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setMenuVisible(!menuVisible)}
-            style={styles.userIcon}
-          >
-            {userFoto ? (
-              <Image source={{ uri: userFoto }} style={styles.userPhoto} />
-            ) : (
-              <View style={[styles.userPhoto, styles.photoPlaceholder]}>
-                <Text style={styles.photoPlaceholderText}>
-                  {userNome ? userNome.charAt(0).toUpperCase() : '?'}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {menuVisible && (
-          <View style={styles.dropdown}>
-            <Text style={styles.userName}>{userNome || 'Usuário'}</Text>
-
-            <TouchableOpacity
-              onPress={() => {
-                setMenuVisible(false);
-                rota.push('/meusprojetos');
-              }}
-              style={styles.dropdownButton}
-            >
-              <Text style={styles.dropdownButtonText}>Meus Projetos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setMenuVisible(false);
-                rota.push('/informacoes');
-              }}
-              style={styles.dropdownButton}
-            >
-              <Text style={styles.dropdownButtonText}>Gerenciar Conta</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleLogout} style={styles.dropdownButton}>
-              <Text style={styles.dropdownButtonText}>Sair</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* Conteúdo */}
       <View style={styles.content}>
+        {/* Logo e Saudação alinhados */}
         <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>
-            {userNome ? `Olá, ${userNome}!` : 'Olá!'}
-          </Text>
-          <Text style={styles.welcomeText}>Seja bem-vindo!</Text>
+          <Image source={require('../../assets/images/logo.png')} style={styles.foto} />
+          <View style={styles.coluna}>
+            <Text
+              style={styles.greetingText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {userNome ? `E aí, ${userNome}!` : 'E aí,'}
+            </Text>
+            <Text style={styles.welcomeText}>Seja bem-vindo!</Text>
+          </View>
         </View>
 
-        <TouchableOpacity
-          onPress={() => rota.push('/cadastrarprojeto')}
-          style={styles.cadastrarButton}
-        >
-          <Text style={styles.cadastrarButtonText}>Cadastrar Projeto</Text>
-        </TouchableOpacity>
+        {/* Header com pesquisa e filtro */}
+        <View style={styles.header}>
+          <View style={styles.topBar}>
+            <View style={styles.searchContainer}>
+              <Ionicons
+                name="search"
+                size={20}
+                color="#203562"
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Pesquisar"
+                placeholderTextColor="#999"
+                value={searchText}
+                onChangeText={setSearchText}
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setFilterModalVisible(true)}
+                style={styles.filterButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="filter-outline" size={24} color="#203562" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
 
+        {/* Lista de projetos */}
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -209,14 +172,22 @@ export default function Home() {
                   {projeto.userFoto ? (
                     <Image source={{ uri: projeto.userFoto }} style={styles.avatar} />
                   ) : (
-                    <Ionicons name="person-circle-outline" size={60} color="#203562" />
+                    <Ionicons name="person-circle-outline" size={50} color="#203562" />
                   )}
-                  <View>
-                    <Text style={styles.nome}>{projeto.userNome}</Text>
+                  <View style={{ maxWidth: 200 }}>
+                    <Text
+                      style={styles.nome}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {projeto.userNome}
+                    </Text>
                   </View>
                 </View>
 
-                <Text style={styles.label}>Projeto:</Text>
+                <Text style={styles.projectTitle}>{projeto.nome}</Text>
+
+                {/* Removida label "Descrição:" */}
                 <Text style={styles.descricao}>{projeto.descricao}</Text>
 
                 <Text style={styles.labelCenter}>
@@ -233,9 +204,6 @@ export default function Home() {
                   </View>
                 </View>
 
-                <Text style={[styles.labelCenter, { marginTop: 12 }]}>
-                 
-                </Text>
                 <TouchableOpacity
                   style={styles.contatoButton}
                   onPress={() =>
@@ -257,6 +225,35 @@ export default function Home() {
             <Text style={styles.noProjetosText}>Nenhum projeto encontrado</Text>
           )}
         </ScrollView>
+         {/* Navbar */}
+      <View style={styles.navbar}>
+        <TouchableOpacity
+          style={[styles.navButton, pathname === '/home' && styles.activeButton]}
+          onPress={() => rota.push('/home')}
+        >
+          <Ionicons name="home" size={28} color="#203562" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, pathname === '/cadastrarprojeto' && styles.activeButton]}
+          onPress={() => rota.push('/cadastrarprojeto')}
+        >
+          <Ionicons name="add-circle" size={35} color="#203562" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.navButton, pathname === '/informacoes' && styles.activeButton]}
+          onPress={() => rota.push('/informacoes')}
+        >
+          {userFoto ? (
+            <Image source={{ uri: userFoto }} style={styles.navProfileImage} />
+          ) : (
+            <Ionicons name="person" size={28} color="#203562" />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      
       </View>
 
       {/* Modal Filtro */}
@@ -298,29 +295,32 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#203562' },
-  scroll: { padding: 20, paddingBottom: 100 },
+  content: { flex: 1 },
+
   header: {
     backgroundColor: '#203562',
     borderBottomWidth: 1,
     borderColor: '#203562',
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: 10,
     paddingBottom: 10,
+    marginTop: 8,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    flex: 1,
-    marginRight: 8,
+    borderRadius: 15,
     paddingHorizontal: 12,
-    height: 40,
+    height: 44,
+    flex: 1,
+    position: 'relative',
   },
   searchIcon: {
     marginRight: 8,
@@ -328,67 +328,36 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    textAlign: 'left',
     color: '#203562',
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
+    paddingRight: 36,
   },
   filterButton: {
-    padding: 8,
-  },
-  userIcon: {
+    position: 'absolute',
+    right: 10,
     padding: 4,
   },
-  userPhoto: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  photoPlaceholder: {
-    backgroundColor: '#203562',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoPlaceholderText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  dropdown: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  userName: {
-    fontWeight: '700',
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#203562',
-    fontFamily: 'Poppins-Bold',
-  },
-  dropdownButton: {
-    paddingVertical: 8,
-  },
-  dropdownButtonText: {
-    fontSize: 14,
-    color: '#203562',
-    fontFamily: 'Poppins-SemiBold',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 0,
-  },
   greetingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    marginTop: 40,
+    marginBottom: 4,
+  },
+  foto: {
+    width: 90,
+    height: 90,
+    resizeMode: 'contain',
+    marginRight: 12,
+  },
+  coluna: {
+    flexDirection: 'column',
+    maxWidth: 220,
   },
   greetingText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#fff',
     fontFamily: 'Poppins-Bold',
@@ -398,25 +367,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Poppins-Regular',
   },
-  cadastrarButton: {
-    backgroundColor: '#fff',
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  cadastrarButtonText: {
-    color: '#203562',
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+  scroll: {
+    padding: 20,
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
-    marginHorizontal: 20,
+    marginHorizontal: 10,
   },
   userRow: {
     flexDirection: 'row',
@@ -424,14 +384,26 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
   },
-  avatar: { width: 60, height: 60, borderRadius: 30 },
-  nome: { fontSize: 16, fontFamily: 'Poppins-Bold', color: '#203562' },
-  label: { fontFamily: 'Poppins-SemiBold', color: '#203562', marginTop: 10, marginBottom: 4 },
+  avatar: { width: 50, height: 50, borderRadius: 25 },
+  nome: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    color: '#203562',
+  },
+  projectTitle: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Bold',
+    color: '#000',
+    textAlign: 'center',
+    marginTop: 8,
+  },
   descricao: {
     color: '#444',
     fontSize: 14,
     lineHeight: 20,
     fontFamily: 'Poppins-Regular',
+    textAlign: 'center',
+    marginTop: 8,
   },
   labelCenter: {
     textAlign: 'center',
@@ -452,18 +424,24 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 16,
   },
-  infoText: { fontWeight: 'bold', color: '#203562' },
+  infoText: {
+    fontWeight: 'bold',
+    color: '#203562',
+  },
   contatoButton: {
     backgroundColor: '#203562',
-    borderRadius: 25,
-    paddingVertical: 12,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 50, // Aumentado para dar mais largura interna
     alignItems: 'center',
     marginTop: 8,
+    alignSelf: 'center',
+    minWidth: 200, // Aumentado para garantir largura mínima maior
   },
   contatoButtonText: {
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
   },
   noProjetosText: {
     textAlign: 'center',
@@ -485,8 +463,8 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 17,
+    
     color: '#203562',
     marginBottom: 16,
     textAlign: 'center',
@@ -516,4 +494,39 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
   },
+  navbar: {
+    position: 'absolute',
+    bottom: 10,
+    left: '5%',
+    right: '5%',
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 40,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  navButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  activeButton: {
+    borderWidth: 2,
+    borderColor: '#203562',
+  },
+  navProfileImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  
 });

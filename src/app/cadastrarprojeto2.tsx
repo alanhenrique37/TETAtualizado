@@ -47,7 +47,12 @@ export default function CadastrarProjeto2() {
     }
 
     const numPessoasNum = parseInt(numeroPessoas);
-    if (!numeroPessoas.trim() || isNaN(numPessoasNum) || numPessoasNum <= 0 || !/^\d+$/.test(numeroPessoas.trim())) {
+    if (
+      !numeroPessoas.trim() ||
+      isNaN(numPessoasNum) ||
+      numPessoasNum <= 0 ||
+      !/^\d+$/.test(numeroPessoas.trim())
+    ) {
       setErroNumeroPessoas(true);
       temErro = true;
     } else {
@@ -69,15 +74,19 @@ export default function CadastrarProjeto2() {
 
     try {
       const projetoBase = await AsyncStorage.getItem('novoProjeto');
+      const userNome = await AsyncStorage.getItem('userNome');
       const userEmail = await AsyncStorage.getItem('userEmail');
+      const userTelefone = await AsyncStorage.getItem('userTelefone');
+      const userFoto = userEmail ? await AsyncStorage.getItem(`userFoto_${userEmail}`) : null;
 
-      if (!projetoBase || !userEmail) {
+      if (!projetoBase || !userNome || !userEmail) {
         Alert.alert('Erro', 'Informações do projeto ou usuário não encontradas.');
         return;
       }
 
       const { nome, descricao } = JSON.parse(projetoBase);
 
+      // Envia para o banco de dados
       const response = await fetch('http://10.0.2.2:3000/cadastrar-projeto', {
         method: 'POST',
         headers: {
@@ -93,16 +102,37 @@ export default function CadastrarProjeto2() {
         }),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (response.ok) {
-        await AsyncStorage.removeItem('novoProjeto');
-        Alert.alert('Sucesso', 'Projeto cadastrado com sucesso!');
-        router.push('/home');
-      } else {
-        console.error('Erro backend:', data);
-        Alert.alert('Erro', data.message || 'Erro ao cadastrar projeto.');
+      if (!response.ok) {
+        console.error('Erro backend:', result);
+        Alert.alert('Erro', result.message || 'Erro ao cadastrar no banco de dados.');
+        return;
       }
+
+      // Salva também no AsyncStorage (opcional)
+      const projetosSalvos = await AsyncStorage.getItem('projetos');
+      const lista = projetosSalvos ? JSON.parse(projetosSalvos) : [];
+
+      const novoProjeto = {
+        id: String(Date.now()),
+        nome,
+        descricao,
+        valor,
+        numeroPessoas,
+        telefone,
+        data: new Date().toLocaleDateString(),
+        userNome,
+        userEmail,
+        userFoto,
+      };
+
+      lista.push(novoProjeto);
+      await AsyncStorage.setItem('projetos', JSON.stringify(lista));
+      await AsyncStorage.removeItem('novoProjeto');
+
+      Alert.alert('Sucesso', 'Projeto cadastrado com sucesso!');
+      router.push('/home');
     } catch (error) {
       console.error('Erro geral:', error);
       Alert.alert('Erro', 'Erro ao conectar com o servidor.');

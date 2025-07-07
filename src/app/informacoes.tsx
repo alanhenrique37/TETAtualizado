@@ -151,7 +151,7 @@ export default function Perfil() {
 
                 {/* Ver Tudo no canto inferior direito */}
                 <View style={styles.verTudoContainer}>
-                  <TouchableOpacity onPress={() => rota.push(`/projeto/${projeto.id}`)}>
+                  <TouchableOpacity onPress={() => rota.push(`/meusProjetos/${projeto.nome}`)}>
                     <Text style={styles.cardVerTudo}>Ver Tudo</Text>
                   </TouchableOpacity>
                 </View>
@@ -178,15 +178,15 @@ export default function Perfil() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navButton, pathname === '/adicionarprojeto' && styles.activeButton]}
-          onPress={() => rota.push('/adicionarprojeto')}
+          style={[styles.navButton, pathname === '/cadastrarprojeto' && styles.activeButton]}
+          onPress={() => rota.push('/cadastrarprojeto')}
         >
           <Ionicons name="add-circle" size={35} color="#203562" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navButton, pathname === '/perfil' && styles.activeButton]}
-          onPress={() => rota.push('/perfil')}
+          style={[styles.navButton, pathname === '/informacoes' && styles.activeButton]}
+          onPress={() => rota.push('/informacoes')}
         >
           {userFoto ? (
             <Image source={{ uri: userFoto }} style={styles.navProfileImage} />
