@@ -86,7 +86,7 @@ export default function EditarPost1() {
       />
 
       <TextInput
-        placeholder="Descrição do projeto\nDica: Clientes adoram entender o propósito logo de cara!"
+        placeholder="Descrição do projeto"
         placeholderTextColor="#999"
         value={descricao}
         onChangeText={setDescricao}

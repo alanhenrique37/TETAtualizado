@@ -163,15 +163,15 @@ export default function MeusProjetos() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navButton, pathname === '/adicionarprojeto' && styles.activeButton]}
-          onPress={() => rota.push('/adicionarprojeto')}
+          style={[styles.navButton, pathname === '/cadastrarprojeto' && styles.activeButton]}
+          onPress={() => rota.push('/cadastrarprojeto')}
         >
           <Ionicons name="add-circle" size={35} color="#203562" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.navButton, pathname === '/perfil' && styles.activeButton]}
-          onPress={() => rota.push('/perfil')}
+          style={[styles.navButton, pathname === '/informacoes' && styles.activeButton]}
+          onPress={() => rota.push('/informacoes')}
         >
           {userFoto ? (
             <Image source={{ uri: userFoto }} style={styles.navProfileImage} />

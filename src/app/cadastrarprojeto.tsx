@@ -69,7 +69,7 @@ export default function CadastrarProjeto1() {
       />
 
       <TextInput
-        placeholder="Descrição do projeto\nDica: Seja claro e inspirador!"
+        placeholder="Descrição do projeto"
         placeholderTextColor="#999"
         value={descricao}
         onChangeText={setDescricao}

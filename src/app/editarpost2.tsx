@@ -1,3 +1,4 @@
+// EditarPost2.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -39,8 +40,8 @@ export default function EditarPost2() {
         const lista = JSON.parse(projetos);
         const projeto = lista.find((p: any) => String(p.id) === String(id));
         if (projeto) {
-          setValor(projeto.valor || '');
-          setNumeroPessoas(projeto.numeroPessoas || '');
+          setValor(projeto.valor?.toString() || '');
+          setNumeroPessoas(projeto.numeroPessoas?.toString() || '');
           setTelefone(projeto.telefone || '');
         } else {
           Alert.alert('Erro', 'Projeto não encontrado.');
@@ -53,30 +54,54 @@ export default function EditarPost2() {
   }, []);
 
   async function salvar() {
-    if (!valor || !telefone) {
-      Alert.alert('Erro', 'Preencha todos os campos obrigatórios.');
-      return;
+  if (!valor || !telefone) {
+    Alert.alert('Erro', 'Preencha todos os campos obrigatórios.');
+    return;
+  }
+
+  if (telefoneRef.current && !telefoneRef.current.isValid()) {
+    Alert.alert('Erro', 'Telefone inválido.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://10.0.2.2:3000/editar-projeto/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        valor,
+        numeroPessoas,
+        telefone,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao atualizar projeto.');
     }
 
-    if (telefoneRef.current && !telefoneRef.current.isValid()) {
-      Alert.alert('Erro', 'Telefone inválido.');
-      return;
-    }
-
-    const projetos = await AsyncStorage.getItem('projetos');
-    if (projetos) {
-      const lista = JSON.parse(projetos);
-      const index = lista.findIndex((p: any) => String(p.id) === String(id));
+    // Atualizar AsyncStorage local
+    const projetosStr = await AsyncStorage.getItem('projetos');
+    if (projetosStr) {
+      const projetos = JSON.parse(projetosStr);
+      const index = projetos.findIndex((p: any) => String(p.id) === String(id));
       if (index !== -1) {
-        lista[index].valor = valor;
-        lista[index].numeroPessoas = numeroPessoas;
-        lista[index].telefone = telefone;
-        await AsyncStorage.setItem('projetos', JSON.stringify(lista));
-        Alert.alert('Sucesso', 'Projeto atualizado com sucesso!');
-        router.push('/meusprojetos');
+        projetos[index].valor = valor;
+        projetos[index].numeroPessoas = numeroPessoas;
+        projetos[index].telefone = telefone;
+        await AsyncStorage.setItem('projetos', JSON.stringify(projetos));
       }
     }
+
+    Alert.alert('Sucesso', 'Projeto atualizado com sucesso!');
+    router.push('/meusProjetos');
+  } catch (error: any) {
+    console.error(error);
+    Alert.alert('Erro', error.message || 'Erro ao atualizar projeto.');
   }
+}
+
 
   if (!fontsLoaded) return null;
 

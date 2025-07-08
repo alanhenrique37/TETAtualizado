@@ -24,6 +24,7 @@ export default function EditarInformacoes() {
   const [telefone, setTelefone] = useState('');
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
   const [emailOriginal, setEmailOriginal] = useState<string | null>(null);
+
   const [fontsLoaded] = useFonts({
     'Poppins-Regular': require('../../assets/fonts/Poppins-Regular.ttf'),
     'Poppins-Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
@@ -42,7 +43,7 @@ export default function EditarInformacoes() {
       if (nomeSalvo) setNome(nomeSalvo);
       if (emailSalvo) {
         setEmail(emailSalvo);
-        setEmailOriginal(emailSalvo); // Guarda email original para PUT
+        setEmailOriginal(emailSalvo);
         const fotoSalva = await AsyncStorage.getItem(`userFoto_${emailSalvo}`);
         if (fotoSalva) setFotoPerfil(fotoSalva);
       }
@@ -53,9 +54,22 @@ export default function EditarInformacoes() {
     carregarDados();
   }, []);
 
+  const validarSenha = (senha: string) => {
+    const regex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    return regex.test(senha);
+  };
+
   const salvarDados = async () => {
-    if (!nome.trim() || !email.trim() || !senha.trim() || !telefone.trim()) {
+    if (!nome.trim() || !senha.trim() || !telefone.trim()) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+      return;
+    }
+
+    if (!validarSenha(senha)) {
+      Alert.alert(
+        'Senha inválida',
+        'A senha deve ter pelo menos 6 caracteres e conter letras e números.'
+      );
       return;
     }
 
@@ -65,7 +79,6 @@ export default function EditarInformacoes() {
         return;
       }
 
-      // Atualiza no backend via PUT
       const response = await fetch(`http://10.0.2.2:3000/logins/${emailOriginal}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -77,23 +90,18 @@ export default function EditarInformacoes() {
         throw new Error(data.message || 'Erro ao atualizar usuário.');
       }
 
-      // Atualiza AsyncStorage local
       await AsyncStorage.setItem('userNome', nome);
       await AsyncStorage.setItem('userEmail', email);
       await AsyncStorage.setItem('userSenha', senha);
       await AsyncStorage.setItem('userTelefone', telefone);
 
-      // Atualiza foto no AsyncStorage com a nova chave se o email mudou
       if (fotoPerfil) {
         await AsyncStorage.setItem(`userFoto_${email}`, fotoPerfil);
-
-        // Se email mudou, remover foto antiga para evitar lixo
         if (emailOriginal !== email) {
           await AsyncStorage.removeItem(`userFoto_${emailOriginal}`);
         }
       }
 
-      // Atualiza emailOriginal para novo email
       setEmailOriginal(email);
 
       Alert.alert('Sucesso', 'Informações atualizadas com sucesso!', [
@@ -115,7 +123,7 @@ export default function EditarInformacoes() {
         style: 'destructive',
         onPress: async () => {
           await AsyncStorage.clear();
-          rota.replace('/login'); // redireciona para o login
+          rota.replace('/login');
         },
       },
     ]);
@@ -144,13 +152,10 @@ export default function EditarInformacoes() {
     }
   };
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  if (!fontsLoaded) return null;
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => rota.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -158,7 +163,6 @@ export default function EditarInformacoes() {
         <Text style={styles.titulo}>Editar Informações</Text>
       </View>
 
-      {/* Foto + Nome */}
       <TouchableOpacity style={styles.fotoContainer} onPress={escolherImagem}>
         {fotoPerfil ? (
           <Image source={{ uri: fotoPerfil }} style={styles.fotoPerfil} />
@@ -170,7 +174,6 @@ export default function EditarInformacoes() {
       </TouchableOpacity>
       <Text style={styles.nome}>{nome || 'Nome do Usuário'}</Text>
 
-      {/* Formulário */}
       <View style={styles.cardContainer}>
         <Text style={styles.label}>Nome</Text>
         <TextInput
@@ -182,20 +185,15 @@ export default function EditarInformacoes() {
         />
 
         <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Digite seu e-mail"
-          placeholderTextColor="#ccc"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-        />
+        <View style={styles.inputDisabled}>
+          <Ionicons name="lock-closed" size={18} color="#aaa" style={{ marginRight: 6 }} />
+          <Text style={styles.emailText}>{email}</Text>
+        </View>
 
         <Text style={styles.label}>Senha</Text>
         <TextInput
           style={styles.input}
-          placeholder="Digite sua senha"
+          placeholder="Digite sua nova senha"
           placeholderTextColor="#ccc"
           secureTextEntry
           value={senha}
@@ -219,8 +217,6 @@ export default function EditarInformacoes() {
         <TouchableOpacity style={styles.btnExcluir} onPress={excluirConta}>
           <Text style={styles.txtExcluir}>Excluir Conta</Text>
         </TouchableOpacity>
-        
-        
       </View>
     </ScrollView>
   );
@@ -288,6 +284,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontFamily: 'Poppins-Regular',
   },
+  inputDisabled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3A4B78',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  emailText: {
+    color: '#aaa',
+    fontFamily: 'Poppins-Regular',
+    fontSize: 15,
+  },
   btnSalvar: {
     backgroundColor: '#fff',
     borderRadius: 30,
@@ -297,7 +307,6 @@ const styles = StyleSheet.create({
   },
   txtBtnSalvar: {
     color: '#203562',
-    height: 20,
     fontSize: 13,
     fontFamily: 'Poppins-SemiBold',
     textAlign: 'center',

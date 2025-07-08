@@ -151,7 +151,7 @@ export default function Perfil() {
 
                 {/* Ver Tudo no canto inferior direito */}
                 <View style={styles.verTudoContainer}>
-                  <TouchableOpacity onPress={() => rota.push(`/meusProjetos/${projeto.nome}`)}>
+                  <TouchableOpacity onPress={() => rota.push(`/meusProjetos`)}>
                     <Text style={styles.cardVerTudo}>Ver Tudo</Text>
                   </TouchableOpacity>
                 </View>
