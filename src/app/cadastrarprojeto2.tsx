@@ -86,7 +86,6 @@ export default function CadastrarProjeto2() {
 
       const { nome, descricao } = JSON.parse(projetoBase);
 
-      // Envia para o banco de dados
       const response = await fetch('http://10.0.2.2:3000/cadastrar-projeto', {
         method: 'POST',
         headers: {
@@ -110,12 +109,13 @@ export default function CadastrarProjeto2() {
         return;
       }
 
-      // Salva também no AsyncStorage (opcional)
+      const idProjeto = result.id || String(Date.now()); // fallback para casos antigos
+
       const projetosSalvos = await AsyncStorage.getItem('projetos');
       const lista = projetosSalvos ? JSON.parse(projetosSalvos) : [];
 
       const novoProjeto = {
-        id: String(Date.now()),
+        id: String(idProjeto),
         nome,
         descricao,
         valor,

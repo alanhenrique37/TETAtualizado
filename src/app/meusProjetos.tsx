@@ -65,38 +65,45 @@ export default function MeusProjetos() {
       "Confirmar exclusão",
       "Tem certeza que deseja excluir este post?",
       [
-        {
-          text: "Cancelar",
-          style: "cancel"
-        },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Excluir",
           style: "destructive",
           onPress: async () => {
             try {
-              // Filtra removendo o projeto que será excluído
+              // Requisição para excluir no backend
+              const response = await fetch(`http://10.0.2.2:3000/projetos/${id}`, {
+                method: 'DELETE',
+              });
+  
+              const data = await response.json();
+  
+              if (!response.ok) {
+                throw new Error(data.message || 'Erro ao excluir projeto no servidor.');
+              }
+  
+              // Remove localmente (AsyncStorage + state)
               const novosProjetos = projetosDoUsuario.filter(p => p.id !== id);
-
-              // Atualiza o estado local
               setProjetosDoUsuario(novosProjetos);
-
-              // Atualiza o AsyncStorage
+  
               const allProjetosRaw = await AsyncStorage.getItem('projetos');
               if (allProjetosRaw) {
                 const allProjetos: Projeto[] = JSON.parse(allProjetosRaw);
                 const atualizados = allProjetos.filter(p => p.id !== id);
                 await AsyncStorage.setItem('projetos', JSON.stringify(atualizados));
               }
-
+  
               Alert.alert("Sucesso", "Post excluído com sucesso!");
-            } catch (error) {
+            } catch (error: any) {
               console.error("Erro ao excluir projeto:", error);
-              Alert.alert("Erro", "Não foi possível excluir o post.");
+              Alert.alert("Erro", error.message || "Erro ao excluir projeto.");
             }
           }
         }
       ]
     );
+  
+  
   };
 
   return (

@@ -23,20 +23,25 @@ export default function Perfil() {
   const rota = useRouter();
   const navigation = useNavigation();
   const pathname = usePathname();
+
   const [userNome, setUserNome] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userSenha, setUserSenha] = useState('');
   const [userTelefone, setUserTelefone] = useState('');
   const [userFoto, setUserFoto] = useState<string | null>(null);
   const [meusProjetos, setMeusProjetos] = useState<Projeto[]>([]);
+
   const [fontsLoaded] = useFonts({
     'Poppins-Regular': require('../../assets/fonts/Poppins-Regular.ttf'),
     'Poppins-Bold': require('../../assets/fonts/Poppins-Bold.ttf'),
     'Poppins-SemiBold': require('../../assets/fonts/Poppins-SemiBold.ttf'),
   });
 
+  const API_URL = 'http://10.0.2.2:3000';
+
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
+
     const loadUserData = async () => {
       const nome = await AsyncStorage.getItem('userNome');
       const email = await AsyncStorage.getItem('userEmail');
@@ -50,7 +55,20 @@ export default function Perfil() {
 
       if (email) {
         const foto = await AsyncStorage.getItem(`userFoto_${email}`);
-        if (foto) setUserFoto(foto);
+        if (foto) {
+          setUserFoto(foto);
+        } else {
+          try {
+            const response = await fetch(`${API_URL}/get-foto?email=${encodeURIComponent(email)}`);
+            const data = await response.json();
+            if (response.ok && data.fotoUrl) {
+              setUserFoto(data.fotoUrl);
+              await AsyncStorage.setItem(`userFoto_${email}`, data.fotoUrl);
+            }
+          } catch (error) {
+            console.error('Erro ao buscar foto do servidor:', error);
+          }
+        }
       }
 
       const projetosRaw = await AsyncStorage.getItem('projetos');
@@ -76,16 +94,51 @@ export default function Perfil() {
       quality: 1,
       allowsEditing: true,
       aspect: [1, 1],
+      base64: true,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      setUserFoto(uri);
+      const base64Data = result.assets[0].base64;
+      if (!base64Data) return;
+
+      const base64Uri = `data:image/jpeg;base64,${base64Data}`;
+
+      setUserFoto(base64Uri);
       if (userEmail) {
-        await AsyncStorage.setItem(`userFoto_${userEmail}`, uri);
+        await AsyncStorage.setItem(`userFoto_${userEmail}`, base64Uri);
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/upload-foto`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: userEmail,
+            foto_base64: base64Data,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Falha ao enviar foto');
+        }
+
+        console.log('Foto enviada com sucesso:', data);
+      } catch (error) {
+        console.error('Erro ao enviar foto:', error);
+        setUserFoto(null);
+        if (userEmail) {
+          await AsyncStorage.removeItem(`userFoto_${userEmail}`);
+        }
+        alert('Erro ao enviar foto. Por favor, tente novamente.');
       }
     }
   };
+
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.mainContainer}>
@@ -323,14 +376,12 @@ const styles = StyleSheet.create({
   cardVerTudo: {
     color: '#203562',
     fontFamily: 'Poppins-Bold',
-
   },
   verTodos: {
     color: '#fff',
     textAlign: 'right',
     marginTop: 16,
     fontFamily: 'Poppins-Bold',
-  
     marginBottom: 20,
   },
   navbar: {
